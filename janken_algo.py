@@ -64,9 +64,6 @@ class jankenMe(jankenman):
 
     def __call__(self):
         self.match += 1
-        self.change_mode()
-        self.get_confidence()
-        
         return super().__call__()
 
     def get_jan(self):
@@ -94,7 +91,7 @@ class jankenMe(jankenman):
         return any([i < llim or ulim < i for i in self.oppo.janken_ratio.values()])
         
 
-# バイアスモードの切替
+    # バイアスモードの切替
     def change_mode(self):
         # バイアスモードに入る条件
         # バイアスモードでない and スリープ中でない and ポイントが(基準値 or 初期閾値)より大きい
@@ -111,6 +108,22 @@ class jankenMe(jankenman):
             self.sleepCount = 0
             self.streak = 0
             self.endBias.append(self.match)
+
+    def get_most_likely(self):
+        self.change_mode()
+        self.get_confidence()
+        # 基準値を「現在の基準値と保有ポイントの平均」と、「保有ポイント」のどちらか高い方にする。
+        self.pointThresh = max((self.point + self.pointThresh)/2, self.pointThresh)
+        if self.biasmode:
+            self.streak += 1
+            # バイアスモード時は出現率が最も少ない手に勝つ手を出し続ける。
+            hand = min(self.oppo.janken_ratio, key=self.oppo.janken_ratio.get)
+            return (hand + 2) % 3
+        else:
+            self.sleepCount += 1
+            if self.sleepCount >= self.sleepThresh:
+                self.sleep = False
+            return random.randint(0,2)
 
     
 
