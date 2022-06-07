@@ -145,7 +145,7 @@ print(me.pointThresh)
 # グラフづくり
 fig = plt.figure(figsize=(18.0, 9.0))
 plt.plot(range(n+1), rr)
-plt.plot(range(0, 10000, 300), [0 for _ in range(0, 10000,300)])
+plt.plot(range(0, n, int(n**0.5)), [0 for _ in range(0, n, int(n**0.5))])
 plt.plot(me.startBias, [0 for _ in range(len(me.startBias))], 'r^')
 plt.plot(me.endBias, [0 for _ in range(len(me.endBias))], 'bv')
 plt.ylim(-600, 600)
