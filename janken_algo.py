@@ -1,24 +1,16 @@
 from matplotlib import pyplot as plt
 import random 
-import numpy as np
-from collections import Counter
-import sys
+
 
 n = 100000
 res = []
-mes = []
-yous = []
-ntoj = {"0": "グー", "1": "チョキ", "2": "パー"}
 match = 0
-
 rr = [0]
 
 
 def get_res(hand1, hand2):
     return (hand1 - hand2) % 3
 
-def get_counter(arr):
-    return list(map(lambda x: (str(x[0]).translate(str.maketrans(ntoj)), x[1]/cnt), Counter(arr).items()))
 
 # じゃんけんbotのベースクラス
 # 対戦相手はこっち
@@ -126,6 +118,7 @@ for i in range(1, n+1):
     r = r if r != 2 else -1
     res.append(r)
     rr.append(rr[i-1]+r)
+    #TODO 実践でこれ出来ないのでリファクタ必須
     me.point += r
 
 print(me.pointThresh)
