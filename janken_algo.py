@@ -109,6 +109,12 @@ class jankenMe(jankenman):
             self.streak = 0
             self.endBias.append(self.match)
 
+    # 過去4試合のパターンから最もありえる手を返す
+    def get_from_pattern(self):
+        a, b, c, d = self.oppo.hands[-4:]
+        prob_dic = {(e, self.patterns[a][b][c][d][e]) for e in range(3)}
+        return max(prob_dic, key=prob_dic.get)
+
     def get_most_likely(self):
         self.change_mode()
         self.get_confidence()
