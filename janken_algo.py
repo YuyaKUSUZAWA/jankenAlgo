@@ -4,7 +4,7 @@ import numpy as np
 from collections import Counter
 import sys
 
-n = 10**4
+n = 100000
 res = []
 mes = []
 yous = []
@@ -54,8 +54,8 @@ class jankenMe(jankenman):
         self.sleep = False
         self.sleepCount = 0
         self.biasmode = False
-        self.th = 100
-        self.streakThresh = 100
+        self.th = 30
+        self.streakThresh = n
         self.pointThresh = 0
         self.sleepThresh = 50
         self.startBias = []
@@ -66,14 +66,18 @@ class jankenMe(jankenman):
         self.match += 1
         self.change_mode()
         self.get_confidence()
+        
         return super().__call__()
 
     def get_jan(self):
+        # 基準値を「現在の基準値と保有ポイントの平均」と、「保有ポイント」のどちらか高い方にする。
+        self.pointThresh = max((self.point + self.pointThresh)/2, self.pointThresh)
         if self.biasmode:
             self.streak += 1
             # バイアスモード時は出現率が最も少ない手に勝つ手を出し続ける。
             hand = min(self.oppo.janken_ratio, key=self.oppo.janken_ratio.get)
             return (hand + 2) % 3
+        
         else:
             self.sleepCount += 1
             if self.sleepCount >= self.sleepThresh:
@@ -85,6 +89,7 @@ class jankenMe(jankenman):
         llim = -1 * ((((1/3)-self.confThresh*(2/(self.match*9))**0.5)*-self.match) // 1)
         # 上限は切り捨て
         ulim = ((1/3)+self.confThresh*(2/(self.match*9))**0.5)*self.match // 1
+        # 敵が99%信頼区間外の偏りがある場合、バイアスモードを強制起動する。
         # print("Not Random!!", self.match)
         return any([i < llim or ulim < i for i in self.oppo.janken_ratio.values()])
         
@@ -92,20 +97,18 @@ class jankenMe(jankenman):
 # バイアスモードの切替
     def change_mode(self):
         # バイアスモードに入る条件
-        # バイアスモードでない and スリープ中でない and ポイントが基準値か、初期閾値以上である。
-        # 敵が99%信頼区間外の偏りがある場合、バイアスモードを強制起動する。
-        if not self.biasmode and ((not self.sleep and self.point >= max(self.th, self.pointThresh)) or self.get_confidence()):
+        # バイアスモードでない and スリープ中でない and ポイントが(基準値 or 初期閾値)より大きい
+        if not self.biasmode and ((not self.sleep and self.point > max(self.th, self.pointThresh)) or self.get_confidence()):
             self.biasmode = True
             if len(self.startBias) == len(self.endBias):
                 self.startBias.append(self.match)
+                
         # バイアスモードが解除される条件
-        # バイアスモードの時 and (バイアスモードに入ってから経過した試合数が閾値を超える or ポイントが初期閾値を下回る)
-        elif self.biasmode and (self.streak >= self.streakThresh or self.point <= self.th):
+        # バイアスモードの時 and (バイアスモードに入ってから経過した試合数が閾値以上 or ポイントが基準値を以下)
+        elif self.biasmode and (self.streak >= self.streakThresh or self.point <= self.pointThresh):
             self.biasmode = False
             self.sleep = True
             self.sleepCount = 0
-            # 基準値はバイアスモード解除時に、現在の基準値と保有ポイントの高い方になる。
-            self.pointThresh = max(self.point, self.pointThresh)
             self.streak = 0
             self.endBias.append(self.match)
 
@@ -132,5 +135,5 @@ plt.plot(range(n+1), rr)
 plt.plot(range(0, 10000, 300), [0 for _ in range(0, 10000,300)])
 plt.plot(me.startBias, [0 for _ in range(len(me.startBias))], 'r^')
 plt.plot(me.endBias, [0 for _ in range(len(me.endBias))], 'bv')
-plt.ylim(-200, 200)
+plt.ylim(-600, 600)
 plt.show()
