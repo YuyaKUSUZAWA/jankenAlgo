@@ -73,8 +73,7 @@ class jankenMe(jankenman):
             self.streak += 1
             # バイアスモード時は出現率が最も少ない手に勝つ手を出し続ける。
             hand = min(self.oppo.janken_ratio, key=self.oppo.janken_ratio.get)
-            return (hand + 2) % 3
-        
+            return (hand + 2) % 3 
         else:
             self.sleepCount += 1
             if self.sleepCount >= self.sleepThresh:
@@ -89,7 +88,6 @@ class jankenMe(jankenman):
         # 敵が99%信頼区間外の偏りがある場合、バイアスモードを強制起動する。
         # print("Not Random!!", self.match)
         return any([i < llim or ulim < i for i in self.oppo.janken_ratio.values()])
-        
 
     # バイアスモードの切替
     def change_mode(self):
@@ -131,7 +129,6 @@ class jankenMe(jankenman):
                 self.sleep = False
             return random.randint(0,2)
 
-    
 
 # インスタンス生成
 me = jankenMe()
