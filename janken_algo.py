@@ -26,6 +26,7 @@ class jankenman():
     def __init__(self):
         self.hands = []
         self.janken_ratio = {0: 0, 1: 0, 2: 0}
+        self.patterns = {a: {b: {c: {d: {e: 0 for e in range(3)} for d in range(3)} for c in range(3)} for b in range(3)} for a in range(3)}
         self.point = 0
         self.match = 0
 
@@ -44,6 +45,11 @@ class jankenman():
     def set_oppo(self, oppo):
         self.oppo = oppo
 
+    # 過去5試合のパターンを記憶する。
+    def set_pattern(self):
+        a, b, c, d, e = self.oppo.hands[-5:]
+        self.patterns[a][b][c][d][e] += 1
+
 # バイアスモード搭載クラス
 # 自分はこっち
 class jankenMe(jankenman):
@@ -61,28 +67,14 @@ class jankenMe(jankenman):
         self.startBias = []
         self.endBias = []
         self.confThresh = 2.58
+        
 
     def __call__(self):
-        self.match += 1
-        self.change_mode()
-        self.get_confidence()
-        
+        self.match += 1        
         return super().__call__()
 
     def get_jan(self):
-        # 基準値を「現在の基準値と保有ポイントの平均」と、「保有ポイント」のどちらか高い方にする。
-        self.pointThresh = max((self.point + self.pointThresh)/2, self.pointThresh)
-        if self.biasmode:
-            self.streak += 1
-            # バイアスモード時は出現率が最も少ない手に勝つ手を出し続ける。
-            hand = min(self.oppo.janken_ratio, key=self.oppo.janken_ratio.get)
-            return (hand + 2) % 3
-        
-        else:
-            self.sleepCount += 1
-            if self.sleepCount >= self.sleepThresh:
-                self.sleep = False
-            return random.randint(0,2)
+        return self.get_from_pattern()
 
     def get_confidence(self):
         # 下限は切り上げ
@@ -94,7 +86,7 @@ class jankenMe(jankenman):
         return any([i < llim or ulim < i for i in self.oppo.janken_ratio.values()])
         
 
-# バイアスモードの切替
+    # バイアスモードの切替
     def change_mode(self):
         # バイアスモードに入る条件
         # バイアスモードでない and スリープ中でない and ポイントが(基準値 or 初期閾値)より大きい
@@ -112,7 +104,30 @@ class jankenMe(jankenman):
             self.streak = 0
             self.endBias.append(self.match)
 
-    
+    # 過去4試合のパターンから最もありえる手を返す
+    def get_from_pattern(self):
+        if not len(self.oppo.hands) < 4:
+            a, b, c, d = self.oppo.hands[-4:]
+            prob_dic = {e:self.patterns[a][b][c][d][e] for e in range(3)}
+            return max(prob_dic, key=prob_dic.get)
+        else:
+            return random.randint(0,2)
+
+    def get_most_likely(self):
+        self.change_mode()
+        self.get_confidence()
+        # 基準値を「現在の基準値と保有ポイントの平均」と、「保有ポイント」のどちらか高い方にする。
+        self.pointThresh = max((self.point + self.pointThresh)/2, self.pointThresh)
+        if self.biasmode:
+            self.streak += 1
+            # バイアスモード時は出現率が最も少ない手に勝つ手を出し続ける。
+            hand = min(self.oppo.janken_ratio, key=self.oppo.janken_ratio.get)
+            return (hand + 2) % 3
+        else:
+            self.sleepCount += 1
+            if self.sleepCount >= self.sleepThresh:
+                self.sleep = False
+            return random.randint(0,2)
 
 # インスタンス生成
 me = jankenMe()
@@ -132,7 +147,7 @@ print(me.pointThresh)
 # グラフづくり
 fig = plt.figure(figsize=(18.0, 9.0))
 plt.plot(range(n+1), rr)
-plt.plot(range(0, 10000, 300), [0 for _ in range(0, 10000,300)])
+plt.plot(range(0, n, int(n**0.5)), [0 for _ in range(0, n, int(n**0.5))])
 plt.plot(me.startBias, [0 for _ in range(len(me.startBias))], 'r^')
 plt.plot(me.endBias, [0 for _ in range(len(me.endBias))], 'bv')
 plt.ylim(-600, 600)
